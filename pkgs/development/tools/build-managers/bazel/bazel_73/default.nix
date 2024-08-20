@@ -142,6 +142,13 @@ let
     hash = "sha256-wr/4pei3NXtaLlIdS2M1EJGuDGshoxwfnaz4x5KPxuE=";
   };
   inherit version;
+  patches = [
+    # Bazel does not sort the contents of its own source for testing in the
+    # repository rule. This causes the output of the repo rule to be nondetermenistic.
+    # This patch fixes is by sorting the contents of the source list within the
+    # repository rule.
+    ./sorted_test_srcs.patch
+  ];
   sourceRoot = ".";
   nativeBuildInputs = [unzip bazel_fhs];
   dontPatch = true;

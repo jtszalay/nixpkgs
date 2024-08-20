@@ -44,9 +44,9 @@
   # Always assume all markers valid (this is needed because we remove markers; they are non-deterministic).
   # Also, don't clean up environment variables (so that NIX_ environment variables are passed to compilers).
 , enableNixHacks ? false
-, version ? "7.3.0"
-, autoPatchelfHook
-, buildFHSEnv
+, version ? "7.3.0",
+  autoPatchelfHook,
+  buildFHSEnv,
 }:
 
 let
@@ -158,8 +158,14 @@ let
   dontFixup = true;
   buildPhase = ''
     runHook preBuild
-    export HOME=$(mktemp -d)
+    export HOME=$TMP
     (cd bazel_src; ${bazel_fhs}/bin/bazel --server_javabase=${runJdk} mod deps --curses=no ; ${bazel_fhs}/bin/bazel --server_javabase=${runJdk} vendor --curses=no --vendor_dir ../vendor_dir --verbose_failures --experimental_strict_java_deps=off --strict_proto_deps=off --tool_java_runtime_version=local_jdk_21 --java_runtime_version=local_jdk_21 --tool_java_language_version=21 --java_language_version=21)
+
+    # the GOCACHE is poisonous!
+    rm -rf vendor_dir/gazelle~~non_module_deps~bazel_gazelle_go_repository_cache/gocache
+
+    # so are .pyc files apparently
+    find vendor_dir -name "*.pyc" -type f -delete
 
     runHook postBuild
   '';
@@ -170,7 +176,7 @@ let
   '';
 
   outputHashMode = "recursive";
-  outputHash = "sha256-acZOeHBHchotsEG51WfpgR7MGJze88xwnON/DE9IlSo=";
+  outputHash = "sha256-pDVLKYBSkXRveqPUe1eZZ0CXTLUuh3fic/MHzw9eo/M=";
   outputHashAlgo = "sha256";
 
 };
@@ -428,6 +434,7 @@ stdenv.mkDerivation rec {
         #      Passing EXTRA_BAZEL_ARGS is tricky due to quoting.
         sedVerbose compile.sh \
           -e "/bazel_build /a\  --verbose_failures \\\\" \
+          -e "/bazel_build /a\  --subcommands \\\\" \
           -e "/bazel_build /a\  --curses=no \\\\" \
           -e "/bazel_build /a\  --toolchain_resolution_debug='@bazel_tools//tools/jdk:(runtime_)?toolchain_type' \\\\" \
           -e "/bazel_build /a\  --tool_java_runtime_version=local_jdk_21 \\\\" \
@@ -437,6 +444,7 @@ stdenv.mkDerivation rec {
           -e "/bazel_build /a\  --extra_toolchains=@bazel_tools//tools/jdk:all \\\\" \
           -e "/bazel_build /a\  --vendor_dir=../vendor_dir \\\\" \
           -e "/bazel_build /a\  --repository_disable_download \\\\" \
+          -e "/bazel_build /a\  --announce_rc \\\\" \
           -e "/bazel_build /a\  --nobuild_python_zip \\\\" \
 
         # Also build parser_deploy.jar with bootstrap bazel
@@ -661,6 +669,6 @@ stdenv.mkDerivation rec {
     # };
 
     # For ease of debugging
-    inherit bazel_deps;
+    inherit bazel_deps bazel_fhs;
   };
 }

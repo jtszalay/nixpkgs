@@ -151,7 +151,6 @@ let
   ];
   sourceRoot = ".";
   nativeBuildInputs = [unzip bazel_fhs];
-  dontPatch = true;
   configurePhase = ''
     runHook preConfigure
 

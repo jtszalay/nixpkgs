@@ -1,7 +1,6 @@
 {
   stdenv
   # nix tooling and utilities
-, callPackage
 , lib
 , fetchurl
 , makeWrapper
@@ -51,7 +50,6 @@
 
 let
   sourceRoot = ".";
-  lockfile = ./MODULE.bazel.lock;
   defaultShellUtils =
     # Keep this list conservative. For more exotic tools, prefer to use
     # @rules_nixpkgs to pull in tools from the nix repository. Example:
@@ -142,13 +140,6 @@ let
     hash = "sha256-wr/4pei3NXtaLlIdS2M1EJGuDGshoxwfnaz4x5KPxuE=";
   };
   inherit version;
-  patches = [
-    # Bazel does not sort the contents of its own source for testing in the
-    # repository rule. This causes the output of the repo rule to be nondetermenistic.
-    # This patch fixes is by sorting the contents of the source list within the
-    # repository rule.
-    ./sorted_test_srcs.patch
-  ];
   sourceRoot = ".";
   nativeBuildInputs = [unzip bazel_fhs];
   dontPatch = true;
@@ -174,6 +165,9 @@ let
     # so are .pyc files apparently
     find vendor_dir -name "*.pyc" -type f -delete
 
+    # and this source list is not produced consistently
+    rm vendor_dir/_main~bazel_test_deps~local_bazel_source_list/find.result.raw
+
     runHook postBuild
   '';
 
@@ -183,7 +177,7 @@ let
   '';
 
   outputHashMode = "recursive";
-  outputHash = "sha256-pDVLKYBSkXRveqPUe1eZZ0CXTLUuh3fic/MHzw9eo/M=";
+  outputHash = "sha256-dHO8NDzmPlE4Q/1/9Vqjue8jhXBoa5EkwgkYmd5bTdg=";
   outputHashAlgo = "sha256";
 
 };
